@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: onpoint-db
+    environment:
+      POSTGRES_USER: onpoint
+      POSTGRES_PASSWORD: onpoint123
+      POSTGRES_DB: onpoint_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - onpoint_pgdata:/var/lib/postgresql/data
+
+volumes:
+  onpoint_pgdata:
