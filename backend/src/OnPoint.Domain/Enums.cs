@@ -69,3 +69,11 @@ public enum IssuePriority
     high,
     urgent
 }
+
+public enum PointsEntryStatus
+{
+    confirmed,
+    pending_review,
+    reversed,
+    expired
+}

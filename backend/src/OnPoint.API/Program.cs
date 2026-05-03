@@ -8,6 +8,8 @@ using OnPoint.Domain;
 using OnPoint.Infrastructure.Auth;
 using OnPoint.Infrastructure.Identity;
 using OnPoint.Infrastructure.Persistence;
+using OnPoint.Infrastructure.Feedback;
+using OnPoint.Infrastructure.Issues;
 using OnPoint.Infrastructure.Sessions;
 using OnPoint.Infrastructure.Tenancy;
 using Serilog;
@@ -30,7 +32,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
             .MapEnum<FeedbackSentiment>("feedback_sentiment")
             .MapEnum<FeedbackSeverity>("feedback_severity")
             .MapEnum<IssueStatus>("issue_status")
-            .MapEnum<IssuePriority>("issue_priority")));
+            .MapEnum<IssuePriority>("issue_priority")
+            .MapEnum<PointsEntryStatus>("points_entry_status")));
 
 // ── JWT Auth ──────────────────────────────────────────────────────────────────
 var jwtSecret = builder.Configuration["Jwt:Secret"]
@@ -73,6 +76,10 @@ builder.Services.AddScoped<ITenantContext, HttpTenantContext>();
 builder.Services.AddScoped<JwtIssuer>();
 builder.Services.AddScoped<StaffAuthHandler>();
 builder.Services.AddScoped<GuestSessionHandler>();
+builder.Services.AddScoped<FraudScorer>();
+builder.Services.AddScoped<PointsService>();
+builder.Services.AddScoped<FeedbackHandler>();
+builder.Services.AddScoped<IssueHandler>();
 
 // ── HTTP ──────────────────────────────────────────────────────────────────────
 builder.Services.AddControllers();
