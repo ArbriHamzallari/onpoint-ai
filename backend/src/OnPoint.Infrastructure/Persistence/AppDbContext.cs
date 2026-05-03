@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using OnPoint.Domain;
+using FeedbackEntity = OnPoint.Domain.Feedback;
 
 namespace OnPoint.Infrastructure.Persistence;
 
@@ -9,7 +10,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Business> Businesses => Set<Business>();
     public DbSet<Location> Locations => Set<Location>();
     public DbSet<FeedbackSession> FeedbackSessions => Set<FeedbackSession>();
-    public DbSet<Feedback> Feedbacks => Set<Feedback>();
+    public DbSet<FeedbackEntity> Feedbacks => Set<FeedbackEntity>();
     public DbSet<Issue> Issues => Set<Issue>();
     public DbSet<StaffUser> StaffUsers => Set<StaffUser>();
     public DbSet<BusinessMembership> BusinessMemberships => Set<BusinessMembership>();
@@ -25,7 +26,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<Business>().ToTable("businesses");
         modelBuilder.Entity<Location>().ToTable("locations");
         modelBuilder.Entity<FeedbackSession>().ToTable("feedback_sessions");
-        modelBuilder.Entity<Feedback>().ToTable("feedback");
+        modelBuilder.Entity<FeedbackEntity>().ToTable("feedback");
         modelBuilder.Entity<Issue>().ToTable("issues");
         modelBuilder.Entity<StaffUser>().ToTable("staff_users");
         modelBuilder.Entity<BusinessMembership>().ToTable("business_memberships");
@@ -105,7 +106,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         });
 
         // Feedback
-        modelBuilder.Entity<Feedback>(e =>
+        modelBuilder.Entity<FeedbackEntity>(e =>
         {
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).HasColumnName("id");
