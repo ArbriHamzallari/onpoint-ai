@@ -10,9 +10,9 @@ public class Feedback
     public string? Comment { get; set; }
     public string? CategoryHint { get; set; }
     public string ClassificationStatus { get; set; } = "pending";
-    public string? Sentiment { get; set; }
+    public FeedbackSentiment? Sentiment { get; set; }
     public string[]? Categories { get; set; }
-    public string? Severity { get; set; }
+    public FeedbackSeverity? Severity { get; set; }
     public Guid? RoutedToDeptId { get; set; }
     public bool RedirectedToPublic { get; set; } = false;
     public bool ContainsPii { get; set; } = false;

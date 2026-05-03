@@ -1,16 +1,16 @@
 namespace OnPoint.Domain;
 
-public class Location
+public class Department
 {
     public Guid Id { get; set; }
     public Guid BusinessId { get; set; }
     public string Name { get; set; } = default!;
-    public string? Label { get; set; }
-    public LocationType Type { get; set; } = LocationType.other;
-    public string ShortCode { get; set; } = default!;
-    public Guid? ParentId { get; set; }
+    public string? Description { get; set; }
+    public string? Icon { get; set; }
+    public string[] HandlesCategories { get; set; } = [];
+    public int SlaMinutes { get; set; } = 60;
+    public int SortOrder { get; set; } = 0;
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
-    public DateTime? DeletedAt { get; set; }
 }

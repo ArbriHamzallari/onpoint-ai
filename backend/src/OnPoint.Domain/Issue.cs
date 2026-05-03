@@ -11,8 +11,8 @@ public class Issue
     public Guid? AssignedTo { get; set; }
     public string Title { get; set; } = default!;
     public string? Description { get; set; }
-    public string Status { get; set; } = "open";
-    public string Priority { get; set; } = "medium";
+    public IssueStatus Status { get; set; } = IssueStatus.open;
+    public IssuePriority Priority { get; set; } = IssuePriority.medium;
     public string? ResolutionNote { get; set; }
     public Guid? ResolvedBy { get; set; }
     public DateTime? ResolvedAt { get; set; }

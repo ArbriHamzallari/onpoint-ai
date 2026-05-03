@@ -11,6 +11,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<FeedbackSession> FeedbackSessions => Set<FeedbackSession>();
     public DbSet<Feedback> Feedbacks => Set<Feedback>();
     public DbSet<Issue> Issues => Set<Issue>();
+    public DbSet<StaffUser> StaffUsers => Set<StaffUser>();
+    public DbSet<BusinessMembership> BusinessMemberships => Set<BusinessMembership>();
+    public DbSet<Department> Departments => Set<Department>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -22,6 +25,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<FeedbackSession>().ToTable("feedback_sessions");
         modelBuilder.Entity<Feedback>().ToTable("feedback");
         modelBuilder.Entity<Issue>().ToTable("issues");
+        modelBuilder.Entity<StaffUser>().ToTable("staff_users");
+        modelBuilder.Entity<BusinessMembership>().ToTable("business_memberships");
+        modelBuilder.Entity<Department>().ToTable("departments");
 
         // Business
         modelBuilder.Entity<Business>(e =>
@@ -141,6 +147,72 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(x => x.SlaBreached).HasColumnName("sla_breached");
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
             e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        });
+
+        // StaffUser
+        modelBuilder.Entity<StaffUser>(e =>
+        {
+            e.ToTable("staff_users");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.Email).HasColumnName("email");
+            e.Property(x => x.PasswordHash).HasColumnName("password_hash");
+            e.Property(x => x.FullName).HasColumnName("full_name");
+            e.Property(x => x.AvatarUrl).HasColumnName("avatar_url");
+            e.Property(x => x.IsEmailVerified).HasColumnName("is_email_verified");
+            e.Property(x => x.EmailVerifiedAt).HasColumnName("email_verified_at");
+            e.Property(x => x.LastLoginAt).HasColumnName("last_login_at");
+            e.Property(x => x.FailedLoginCount).HasColumnName("failed_login_count");
+            e.Property(x => x.LockedUntil).HasColumnName("locked_until");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
+            e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+            e.Property(x => x.DeletedAt).HasColumnName("deleted_at");
+            e.HasQueryFilter(x => x.DeletedAt == null);
+        });
+
+        // BusinessMembership
+        modelBuilder.Entity<BusinessMembership>(e =>
+        {
+            e.ToTable("business_memberships");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.BusinessId).HasColumnName("business_id");
+            e.Property(x => x.StaffUserId).HasColumnName("staff_user_id");
+            e.Property(x => x.Role).HasColumnName("role");
+            e.Property(x => x.DepartmentIds).HasColumnName("department_ids");
+            e.Property(x => x.InvitedBy).HasColumnName("invited_by");
+            e.Property(x => x.InvitationAcceptedAt).HasColumnName("invitation_accepted_at");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
+            e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+
+            e.HasOne<Business>()
+                .WithMany()
+                .HasForeignKey(x => x.BusinessId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne<StaffUser>()
+                .WithMany()
+                .HasForeignKey(x => x.StaffUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Department
+        modelBuilder.Entity<Department>(e =>
+        {
+            e.ToTable("departments");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.BusinessId).HasColumnName("business_id");
+            e.Property(x => x.Name).HasColumnName("name");
+            e.Property(x => x.Description).HasColumnName("description");
+            e.Property(x => x.Icon).HasColumnName("icon");
+            e.Property(x => x.HandlesCategories).HasColumnName("handles_categories");
+            e.Property(x => x.SlaMinutes).HasColumnName("sla_minutes");
+            e.Property(x => x.SortOrder).HasColumnName("sort_order");
+            e.Property(x => x.IsActive).HasColumnName("is_active");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
+            e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+            e.HasQueryFilter(x => x.IsActive);
         });
     }
 }
