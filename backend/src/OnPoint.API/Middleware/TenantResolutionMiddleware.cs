@@ -16,8 +16,10 @@ public class TenantResolutionMiddleware(RequestDelegate next)
         if (Guid.TryParse(businessIdClaim, out var bizIdFromJwt))
         {
             tenant.SetBusiness(bizIdFromJwt);
+#pragma warning disable EF1003 // Values are Guid-validated; SET LOCAL cannot be parameterized
             await db.Database.ExecuteSqlRawAsync(
-                $"SET LOCAL app.current_business_id = '{bizIdFromJwt}'");
+                "SET LOCAL app.current_business_id = '" + bizIdFromJwt + "'");
+#pragma warning restore EF1003
 
             if (ctx.User?.FindFirst("role")?.Value == "platform_admin")
             {
@@ -40,8 +42,10 @@ public class TenantResolutionMiddleware(RequestDelegate next)
             {
                 tenant.SetBusiness(session.BusinessId);
                 tenant.SetSession(session.Id);
+#pragma warning disable EF1003 // Values are Guid-validated; SET LOCAL cannot be parameterized
                 await db.Database.ExecuteSqlRawAsync(
-                    $"SET LOCAL app.current_business_id = '{session.BusinessId}'");
+                    "SET LOCAL app.current_business_id = '" + session.BusinessId + "'");
+#pragma warning restore EF1003
             }
         }
 

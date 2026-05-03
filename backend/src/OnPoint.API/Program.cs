@@ -10,6 +10,7 @@ using OnPoint.Infrastructure.Identity;
 using OnPoint.Infrastructure.Persistence;
 using OnPoint.Infrastructure.Feedback;
 using OnPoint.Infrastructure.Issues;
+using OnPoint.Infrastructure.Locations;
 using OnPoint.Infrastructure.Sessions;
 using OnPoint.Infrastructure.Tenancy;
 using Serilog;
@@ -80,6 +81,7 @@ builder.Services.AddScoped<FraudScorer>();
 builder.Services.AddScoped<PointsService>();
 builder.Services.AddScoped<FeedbackHandler>();
 builder.Services.AddScoped<IssueHandler>();
+builder.Services.AddScoped<LocationHandler>();
 
 // ── HTTP ──────────────────────────────────────────────────────────────────────
 builder.Services.AddControllers();
