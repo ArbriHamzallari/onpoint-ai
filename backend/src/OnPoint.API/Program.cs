@@ -87,6 +87,16 @@ builder.Services.AddScoped<DepartmentHandler>();
 
 // ── HTTP ──────────────────────────────────────────────────────────────────────
 builder.Services.AddControllers();
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins("http://localhost:3000", "http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
 
@@ -97,6 +107,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 
 app.UseHttpsRedirection();
+app.UseCors();
 app.UseAuthentication();
 
 // Must come AFTER UseAuthentication so JWT claims are available
