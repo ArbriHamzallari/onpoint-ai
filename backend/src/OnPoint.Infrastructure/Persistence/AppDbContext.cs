@@ -14,6 +14,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<StaffUser> StaffUsers => Set<StaffUser>();
     public DbSet<BusinessMembership> BusinessMemberships => Set<BusinessMembership>();
     public DbSet<Department> Departments => Set<Department>();
+    public DbSet<GuestUser> GuestUsers => Set<GuestUser>();
+    public DbSet<PointsLedger> PointsLedgers => Set<PointsLedger>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -213,6 +215,52 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
             e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
             e.HasQueryFilter(x => x.IsActive);
+        });
+
+        // GuestUser
+        modelBuilder.Entity<GuestUser>(e =>
+        {
+            e.ToTable("guest_users");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.Email).HasColumnName("email");
+            e.Property(x => x.Phone).HasColumnName("phone");
+            e.Property(x => x.FullName).HasColumnName("full_name");
+            e.Property(x => x.IsEmailVerified).HasColumnName("is_email_verified");
+            e.Property(x => x.IsPhoneVerified).HasColumnName("is_phone_verified");
+            e.Property(x => x.Locale).HasColumnName("locale");
+            e.Property(x => x.FraudScore).HasColumnName("fraud_score");
+            e.Property(x => x.IsBlocked).HasColumnName("is_blocked");
+            e.Property(x => x.BlockedReason).HasColumnName("blocked_reason");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
+            e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+            e.Property(x => x.DeletedAt).HasColumnName("deleted_at");
+            e.Property(x => x.AnonymizedAt).HasColumnName("anonymized_at");
+            e.HasQueryFilter(x => x.DeletedAt == null);
+        });
+
+        // PointsLedger
+        modelBuilder.Entity<PointsLedger>(e =>
+        {
+            e.ToTable("points_ledger");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.GuestUserId).HasColumnName("guest_user_id");
+            e.Property(x => x.SessionId).HasColumnName("session_id");
+            e.Property(x => x.BusinessId).HasColumnName("business_id");
+            e.Property(x => x.Amount).HasColumnName("amount");
+            e.Property(x => x.Reason).HasColumnName("reason");
+            e.Property(x => x.FeedbackId).HasColumnName("feedback_id");
+            e.Property(x => x.IssueId).HasColumnName("issue_id");
+            e.Property(x => x.RedemptionId).HasColumnName("redemption_id");
+            e.Property(x => x.Status).HasColumnName("status");
+            e.Property(x => x.FraudScore).HasColumnName("fraud_score");
+            e.Property(x => x.Flagged).HasColumnName("flagged");
+            e.Property(x => x.ExpiresAt).HasColumnName("expires_at");
+            e.Property(x => x.ReversedByEntryId).HasColumnName("reversed_by_entry_id");
+            e.Property(x => x.ReversedReason).HasColumnName("reversed_reason");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
+            e.Property(x => x.ConfirmedAt).HasColumnName("confirmed_at");
         });
     }
 }
