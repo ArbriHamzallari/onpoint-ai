@@ -100,6 +100,12 @@ builder.Services.AddCors(options =>
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
 
+// Development-only: demo seed data
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddHostedService<OnPoint.Infrastructure.Seeding.DemoSeedService>();
+}
+
 var app = builder.Build();
 
 // ── Middleware pipeline ───────────────────────────────────────────────────────
@@ -116,46 +122,5 @@ app.UseMiddleware<TenantResolutionMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHealthChecks("/health");
-
-// ── Dev seed ──────────────────────────────────────────────────────────────────
-// Inserts a test business + location so QR endpoints can be tested immediately.
-// Remove this block before going to production.
-if (app.Environment.IsDevelopment())
-{
-    using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-    if (!await db.Businesses.AnyAsync())
-    {
-        var bizId = Guid.NewGuid();
-
-        db.Businesses.Add(new OnPoint.Domain.Business
-        {
-            Id        = bizId,
-            Slug      = "oceanview",
-            Name      = "Oceanview Hotel",
-            Type      = BusinessType.hotel,
-            Plan      = BusinessPlan.trial,
-            Timezone  = "Europe/Tirane",
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        });
-
-        db.Locations.Add(new OnPoint.Domain.Location
-        {
-            Id         = Guid.NewGuid(),
-            BusinessId = bizId,
-            Name       = "Room 204",
-            Label      = "Deluxe",
-            Type       = LocationType.room,
-            ShortCode  = "test-qr-001",
-            IsActive   = true,
-            CreatedAt  = DateTime.UtcNow,
-            UpdatedAt  = DateTime.UtcNow
-        });
-
-        await db.SaveChangesAsync();
-    }
-}
 
 app.Run();
