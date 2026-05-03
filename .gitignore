@@ -3,3 +3,6 @@ bin/
 obj/
 .env
 *.log
+
+# Smoke-test output (locations QR verification)
+/qr.png
