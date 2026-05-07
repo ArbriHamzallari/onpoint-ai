@@ -354,8 +354,9 @@ public class DemoSeedService : IHostedService
         AppDbContext db,
         Guid businessId,
         CancellationToken cancellationToken) =>
-        db.Database.ExecuteSqlRawAsync(
-            $"SET LOCAL app.current_business_id = '{businessId}'",
+        // FormattableString overload parameterizes {businessId} (no EF1002 raw-SQL warning).
+        db.Database.ExecuteSqlAsync(
+            $"SET LOCAL app.current_business_id = {businessId}",
             cancellationToken);
 
     private static IssueStatus ParseIssueStatus(string s) => s switch
