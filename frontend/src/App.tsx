@@ -3,6 +3,8 @@ import { AuthProvider } from './contexts/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { RoomsPage } from './pages/RoomsPage'
+import { SettingsPage } from './pages/SettingsPage'
 import { GuestFeedbackPage } from './pages/GuestFeedbackPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 
@@ -21,6 +23,22 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/rooms"
+            element={
+              <ProtectedRoute>
+                <RoomsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <SettingsPage />
               </ProtectedRoute>
             }
           />
