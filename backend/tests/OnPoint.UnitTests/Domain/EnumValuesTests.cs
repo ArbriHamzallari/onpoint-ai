@@ -53,4 +53,19 @@ public class EnumValuesTests
     public void FeedbackSeverity_HasExpectedValues() =>
         Enum.GetNames<FeedbackSeverity>().Should().BeEquivalentTo(
             new[] { "low", "medium", "high", "urgent", "unknown" });
+
+    [Fact]
+    public void AiStage_HasExpectedValues() =>
+        Enum.GetNames<AiStage>().Should().BeEquivalentTo(
+            new[]
+            {
+                "transcription", "sentiment", "classifier", "priority",
+                "router", "matcher", "recommender", "satisfaction",
+                "chatbot", "learning"
+            });
+
+    [Fact]
+    public void AiProvider_HasExpectedValues() =>
+        Enum.GetNames<AiProvider>().Should().BeEquivalentTo(
+            new[] { "openai", "anthropic", "rule_based", "custom" });
 }

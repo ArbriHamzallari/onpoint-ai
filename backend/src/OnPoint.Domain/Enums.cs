@@ -77,3 +77,25 @@ public enum PointsEntryStatus
     reversed,
     expired
 }
+
+public enum AiStage
+{
+    transcription,
+    sentiment,
+    classifier,
+    priority,
+    router,
+    matcher,
+    recommender,
+    satisfaction,
+    chatbot,
+    learning
+}
+
+public enum AiProvider
+{
+    openai,
+    anthropic,
+    rule_based,
+    custom
+}

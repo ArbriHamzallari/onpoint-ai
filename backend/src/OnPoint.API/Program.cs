@@ -35,7 +35,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
             .MapEnum<FeedbackSeverity>("feedback_severity")
             .MapEnum<IssueStatus>("issue_status")
             .MapEnum<IssuePriority>("issue_priority")
-            .MapEnum<PointsEntryStatus>("points_entry_status")));
+            .MapEnum<PointsEntryStatus>("points_entry_status")
+            .MapEnum<AiStage>("ai_stage")
+            .MapEnum<AiProvider>("ai_provider")));
 
 // ── JWT Auth ──────────────────────────────────────────────────────────────────
 var jwtSecret = builder.Configuration["Jwt:Secret"]

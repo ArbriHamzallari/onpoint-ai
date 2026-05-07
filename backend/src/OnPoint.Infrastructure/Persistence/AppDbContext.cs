@@ -17,6 +17,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Department> Departments => Set<Department>();
     public DbSet<GuestUser> GuestUsers => Set<GuestUser>();
     public DbSet<PointsLedger> PointsLedgers => Set<PointsLedger>();
+    public DbSet<AiPrediction> AiPredictions => Set<AiPrediction>();
+    public DbSet<ModelVersion> ModelVersions => Set<ModelVersion>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -262,6 +264,63 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(x => x.ReversedReason).HasColumnName("reversed_reason");
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
             e.Property(x => x.ConfirmedAt).HasColumnName("confirmed_at");
+        });
+
+        // AiPrediction — append-only audit log of every AI inference
+        modelBuilder.Entity<AiPrediction>(e =>
+        {
+            e.ToTable("ai_predictions");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.BusinessId).HasColumnName("business_id");
+            e.Property(x => x.IssueId).HasColumnName("issue_id");
+            e.Property(x => x.FeedbackId).HasColumnName("feedback_id");
+            e.Property(x => x.SessionId).HasColumnName("session_id");
+            e.Property(x => x.Stage).HasColumnName("stage");
+            e.Property(x => x.InputHash).HasColumnName("input_hash");
+            e.Property(x => x.OutputJson).HasColumnName("output_json").HasColumnType("jsonb");
+            e.Property(x => x.Explanation).HasColumnName("explanation");
+            e.Property(x => x.PromptText).HasColumnName("prompt_text");
+            e.Property(x => x.ResponseText).HasColumnName("response_text");
+            e.Property(x => x.ContainsPii).HasColumnName("contains_pii");
+            e.Property(x => x.ModelVersionId).HasColumnName("model_version_id");
+            e.Property(x => x.ModelVersion).HasColumnName("model_version");
+            e.Property(x => x.PromptVersion).HasColumnName("prompt_version");
+            e.Property(x => x.Provider).HasColumnName("provider");
+            e.Property(x => x.Confidence).HasColumnName("confidence");
+            e.Property(x => x.LatencyMs).HasColumnName("latency_ms");
+            e.Property(x => x.CostUsd).HasColumnName("cost_usd");
+            e.Property(x => x.AiFallback).HasColumnName("ai_fallback");
+            e.Property(x => x.FallbackReason).HasColumnName("fallback_reason");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
+        });
+
+        // ModelVersion — global registry, no RLS, immutable per-version per CLAUDE.md
+        modelBuilder.Entity<ModelVersion>(e =>
+        {
+            e.ToTable("model_versions");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.Name).HasColumnName("name");
+            e.Property(x => x.Version).HasColumnName("version");
+            e.Property(x => x.Provider).HasColumnName("provider");
+            e.Property(x => x.ModelId).HasColumnName("model_id");
+            e.Property(x => x.PromptVersion).HasColumnName("prompt_version");
+            e.Property(x => x.DeployedAt).HasColumnName("deployed_at");
+            e.Property(x => x.ShadowUntil).HasColumnName("shadow_until");
+            e.Property(x => x.CanaryPercent).HasColumnName("canary_percent");
+            e.Property(x => x.IsActive).HasColumnName("is_active");
+            e.Property(x => x.CostPer1kInputTokens).HasColumnName("cost_per_1k_input_tokens");
+            e.Property(x => x.CostPer1kOutputTokens).HasColumnName("cost_per_1k_output_tokens");
+            e.Property(x => x.Notes).HasColumnName("notes");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
+            e.Property(x => x.Metadata)
+                .HasColumnName("metadata")
+                .HasColumnType("jsonb")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => JsonSerializer.Deserialize<Dictionary<string, object>>(v, (JsonSerializerOptions?)null) ?? new());
+            e.HasIndex(x => new { x.Name, x.Version }).IsUnique();
         });
     }
 }
