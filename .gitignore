@@ -9,3 +9,12 @@ obj/
 
 # Claude Code local settings (per-machine, not for shared repo)
 .claude/settings.local.json
+
+# Python (ai-service)
+ai-service/.venv/
+ai-service/__pycache__/
+ai-service/**/__pycache__/
+ai-service/.pytest_cache/
+ai-service/.ruff_cache/
+ai-service/*.egg-info/
+ai-service/.env
