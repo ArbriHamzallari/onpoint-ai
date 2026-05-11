@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using OnPoint.Application.Events;
 using OnPoint.Domain;
 using OnPoint.Infrastructure.Persistence;
 
@@ -9,10 +10,17 @@ public class IssueHandler
     private const int MaxPageSize = 100;
 
     private readonly AppDbContext _db;
+    private readonly IIssueEventPublisher _events;
+    private readonly IGuestStatusPublisher _guestEvents;
 
-    public IssueHandler(AppDbContext db)
+    public IssueHandler(
+        AppDbContext db,
+        IIssueEventPublisher events,
+        IGuestStatusPublisher guestEvents)
     {
         _db = db;
+        _events = events;
+        _guestEvents = guestEvents;
     }
 
     private static (int Page, int PageSize) NormalizePaging(int page, int pageSize)
@@ -213,6 +221,11 @@ public class IssueHandler
 
         await _db.SaveChangesAsync(ct);
 
+        await _events.IssueUpdatedAsync(businessId, issue.Id, ct);
+        await _events.DashboardStatsChangedAsync(businessId, ct);
+        await _guestEvents.StatusChangedAsync(
+            issue.SessionId, issue.Id, issue.Status.ToString(), ct);
+
         return new IssueActionResponse(issue.Id, issue.Status.ToString(), issue.UpdatedAt);
     }
 
@@ -241,6 +254,11 @@ public class IssueHandler
         issue.UpdatedAt = now;
 
         await _db.SaveChangesAsync(ct);
+
+        await _events.IssueResolvedAsync(businessId, issue.Id, ct);
+        await _events.DashboardStatsChangedAsync(businessId, ct);
+        await _guestEvents.StatusChangedAsync(
+            issue.SessionId, issue.Id, issue.Status.ToString(), ct);
 
         return new IssueActionResponse(issue.Id, issue.Status.ToString(), issue.UpdatedAt);
     }
@@ -279,6 +297,14 @@ public class IssueHandler
         issue.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(ct);
+
+        await _events.IssueAssignedAsync(businessId, issue.Id, ct);
+        await _events.DashboardStatsChangedAsync(businessId, ct);
+        // Fire even when status didn't transition — the guest cares about the
+        // new department name (visible on their status screen), which is part
+        // of the same logical "assignment" event.
+        await _guestEvents.StatusChangedAsync(
+            issue.SessionId, issue.Id, issue.Status.ToString(), ct);
 
         return new IssueActionResponse(issue.Id, issue.Status.ToString(), issue.UpdatedAt);
     }

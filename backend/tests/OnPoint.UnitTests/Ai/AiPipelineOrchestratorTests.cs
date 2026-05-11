@@ -2,6 +2,7 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using OnPoint.Application.Ai;
+using OnPoint.Application.Events;
 using OnPoint.Domain;
 using OnPoint.Infrastructure.Ai;
 using OnPoint.Infrastructure.Persistence;
@@ -119,6 +120,8 @@ public class AiPipelineOrchestratorTests
         new(
             new FakeAi(result),
             db,
+            NullIssueEventPublisher.Instance,
+            NullGuestStatusPublisher.Instance,
             NullLogger<AiPipelineOrchestrator>.Instance
         );
 

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using OnPoint.Application.Ai;
+using OnPoint.Application.Events;
 using OnPoint.Domain;
 using OnPoint.Infrastructure.Persistence;
 
@@ -29,16 +30,22 @@ public sealed class AiPipelineOrchestrator
 
     private readonly IAiService _ai;
     private readonly AppDbContext _db;
+    private readonly IIssueEventPublisher _events;
+    private readonly IGuestStatusPublisher _guestEvents;
     private readonly ILogger<AiPipelineOrchestrator> _logger;
 
     public AiPipelineOrchestrator(
         IAiService ai,
         AppDbContext db,
+        IIssueEventPublisher events,
+        IGuestStatusPublisher guestEvents,
         ILogger<AiPipelineOrchestrator> logger)
     {
-        _ai     = ai;
-        _db     = db;
-        _logger = logger;
+        _ai          = ai;
+        _db          = db;
+        _events      = events;
+        _guestEvents = guestEvents;
+        _logger      = logger;
     }
 
     public async Task ProcessAsync(AiPipelineRequest request, CancellationToken ct = default)
@@ -70,6 +77,9 @@ public sealed class AiPipelineOrchestrator
                 "AI pipeline: service unavailable for issue {IssueId}. " +
                 "Marked ai_fallback=true; no prediction rows stored.",
                 request.IssueId);
+
+            // Notify dashboard so the ai_fallback badge appears on the issue card.
+            await _events.IssueUpdatedAsync(request.BusinessId, issue.Id, ct);
             return;
         }
 
@@ -126,6 +136,7 @@ public sealed class AiPipelineOrchestrator
             // Department routing — only auto-route when:
             //   • Router confidence ≥ 0.70 (CLAUDE.md §AI Engineering #6)
             //   • Issue is still open (no human has touched it yet)
+            bool departmentChanged = false;
             if (result.DepartmentKey is not null
                 && result.RouterConfidence >= ConfidenceThreshold
                 && issue.Status == IssueStatus.open)
@@ -140,6 +151,7 @@ public sealed class AiPipelineOrchestrator
                 {
                     issue.DepartmentId = dept.Id;
                     issue.Status       = IssueStatus.assigned;
+                    departmentChanged  = true;
                 }
             }
 
@@ -150,6 +162,26 @@ public sealed class AiPipelineOrchestrator
 
             if (tx is not null)
                 await tx.CommitAsync(ct);
+
+            // Notify subscribed dashboards AFTER commit so the refetch sees the new
+            // row. IssueAssigned when AI auto-routed (status moved open → assigned),
+            // otherwise IssueUpdated (just AI fields refreshed).
+            if (departmentChanged)
+                await _events.IssueAssignedAsync(request.BusinessId, issue.Id, ct);
+            else
+                await _events.IssueUpdatedAsync(request.BusinessId, issue.Id, ct);
+
+            await _events.DashboardStatsChangedAsync(request.BusinessId, ct);
+
+            // Notify the guest's status screen too. AiUpdateAdded surfaces the
+            // category/dept on their timeline. If AI auto-routed, also fire
+            // StatusChanged so the timeline advances (open → assigned).
+            await _guestEvents.AiUpdateAddedAsync(request.SessionId, issue.Id, ct);
+            if (departmentChanged)
+            {
+                await _guestEvents.StatusChangedAsync(
+                    request.SessionId, issue.Id, issue.Status.ToString(), ct);
+            }
 
             _logger.LogInformation(
                 "AI pipeline complete — issue {IssueId}: " +

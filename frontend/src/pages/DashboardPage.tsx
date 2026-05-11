@@ -8,10 +8,15 @@ import { issuesApi } from '../api/issues'
 import type { DashboardStats, IssueSummary, IssueStatus } from '../types'
 import { useInterval } from '../hooks/useInterval'
 import { ApiError } from '../api/client'
+import { useIssuesHub, useDashboardHub } from '../realtime'
+import { useAuth } from '../contexts/AuthContext'
 
-const REFRESH_MS = 10_000
+// Polling fallback interval — engaged ONLY when the SignalR hubs are disconnected.
+// While the hubs are live the dashboard updates push-style; no need to poll.
+const POLLING_FALLBACK_MS = 10_000
 
 export function DashboardPage() {
+  const { isAuthenticated } = useAuth()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [issues, setIssues] = useState<IssueSummary[]>([])
   const [statusFilter, setStatusFilter] = useState<IssueStatus | ''>('')
@@ -44,7 +49,21 @@ export function DashboardPage() {
     refresh()
   }, [refresh])
 
-  useInterval(refresh, REFRESH_MS)
+  // Live updates — both hubs join group "biz:{businessId}" via the JWT claim,
+  // so we receive only events for the authenticated tenant.
+  const { connected: issuesConnected } = useIssuesHub({
+    onChanged: refresh,
+    enabled: isAuthenticated,
+  })
+  const { connected: dashboardConnected } = useDashboardHub({
+    onStatsChanged: refresh,
+    enabled: isAuthenticated,
+  })
+
+  // Both hubs must be live to skip polling. If either drops we fall back so the
+  // dashboard stays accurate during reconnects (CLAUDE.md §Real-Time).
+  const hubsLive = issuesConnected && dashboardConnected
+  useInterval(refresh, hubsLive ? null : POLLING_FALLBACK_MS)
 
   async function handleStart(id: string) {
     setBusyId(id)
@@ -116,8 +135,15 @@ export function DashboardPage() {
           <div className="flex items-center gap-3">
             <h2 className="font-bold text-text-primary">Live Issue Feed</h2>
             <span className="flex items-center gap-1.5 text-xs text-text-secondary">
-              <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-              Live
+              <span
+                className={
+                  hubsLive
+                    ? 'w-1.5 h-1.5 rounded-full bg-success animate-pulse'
+                    : 'w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse'
+                }
+                aria-label={hubsLive ? 'Live' : 'Reconnecting'}
+              />
+              {hubsLive ? 'Live' : 'Reconnecting…'}
             </span>
           </div>
           <select

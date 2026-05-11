@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { issuesApi } from '../api/issues'
 import { departmentsApi } from '../api/departments'
 import type { IssueDetail, Department } from '../types'
@@ -6,6 +6,8 @@ import { StatusBadge } from './StatusBadge'
 import { PriorityBadge } from './PriorityBadge'
 import { formatRelativeTime } from '../utils/time'
 import { ApiError } from '../api/client'
+import { useIssuesHub } from '../realtime'
+import { useAuth } from '../contexts/AuthContext'
 
 interface IssueDetailModalProps {
   issueId: string
@@ -14,6 +16,7 @@ interface IssueDetailModalProps {
 }
 
 export function IssueDetailModal({ issueId, onClose, onChanged }: IssueDetailModalProps) {
+  const { isAuthenticated } = useAuth()
   const [issue, setIssue] = useState<IssueDetail | null>(null)
   const [departments, setDepartments] = useState<Department[]>([])
   const [loading, setLoading] = useState(true)
@@ -48,15 +51,24 @@ export function IssueDetailModal({ issueId, onClose, onChanged }: IssueDetailMod
     }
   }, [issueId])
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     try {
       const updated = await issuesApi.get(issueId)
       setIssue(updated)
       onChanged()
     } catch {
-      // silently ignore — list will refresh on next interval anyway
+      // silently ignore — parent will refresh on hub event or polling tick
     }
-  }
+  }, [issueId, onChanged])
+
+  // Live: auto-refresh the modal whenever an event arrives matching THIS issue.
+  // Filters by id so we don't refetch on unrelated dashboard activity.
+  useIssuesHub({
+    enabled: isAuthenticated,
+    onChanged: (changedId) => {
+      if (changedId === issueId) refresh()
+    },
+  })
 
   async function handleStart() {
     setBusy(true)

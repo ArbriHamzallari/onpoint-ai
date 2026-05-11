@@ -2,8 +2,10 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using OnPoint.API.Hubs;
 using OnPoint.API.Middleware;
 using OnPoint.Application.Ai;
+using OnPoint.Application.Events;
 using OnPoint.Application.Tenancy;
 using OnPoint.Domain;
 using OnPoint.Infrastructure.Ai;
@@ -100,6 +102,14 @@ builder.Services.AddSingleton<IAiPipelineQueue>(sp =>
 builder.Services.AddScoped<AiPipelineOrchestrator>();
 builder.Services.AddHostedService<AiPipelineBackgroundService>();
 
+// ── Real-time (SignalR) ───────────────────────────────────────────────────────
+// Hub broadcasts are tenant-scoped via group names (see IssuesHub.GroupFor for
+// staff and GuestStatusHub.GroupFor for guests). Publishers are singletons so
+// handlers can resolve them without scope-mismatch.
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<IIssueEventPublisher, SignalRIssueEventPublisher>();
+builder.Services.AddSingleton<IGuestStatusPublisher, SignalRGuestStatusPublisher>();
+
 // ── HTTP ──────────────────────────────────────────────────────────────────────
 builder.Services.AddControllers();
 builder.Services.AddCors(options =>
@@ -137,5 +147,11 @@ app.UseMiddleware<TenantResolutionMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHealthChecks("/health");
+
+// SignalR hubs — JWT pulled from ?access_token= via the JwtBearer event above.
+app.MapHub<IssuesHub>("/hubs/issues");
+app.MapHub<DashboardHub>("/hubs/dashboard");
+// Guest hub authenticates via op_session cookie, validated inside the hub itself.
+app.MapHub<GuestStatusHub>("/hubs/guest");
 
 app.Run();

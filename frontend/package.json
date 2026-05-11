@@ -11,6 +11,7 @@
   "dependencies": {
     "@fontsource/geist-mono": "^5.2.7",
     "@fontsource/geist-sans": "^5.2.5",
+    "@microsoft/signalr": "^10.0.0",
     "framer-motion": "^11.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

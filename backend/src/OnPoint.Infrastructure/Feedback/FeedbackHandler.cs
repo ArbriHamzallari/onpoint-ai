@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using OnPoint.Application.Ai;
+using OnPoint.Application.Events;
 using OnPoint.Domain;
 using OnPoint.Infrastructure.Persistence;
 
@@ -11,17 +12,23 @@ public class FeedbackHandler
     private readonly FraudScorer _fraudScorer;
     private readonly PointsService _pointsService;
     private readonly IAiPipelineQueue _aiQueue;
+    private readonly IIssueEventPublisher _events;
+    private readonly IGuestStatusPublisher _guestEvents;
 
     public FeedbackHandler(
         AppDbContext db,
         FraudScorer fraudScorer,
         PointsService pointsService,
-        IAiPipelineQueue aiQueue)
+        IAiPipelineQueue aiQueue,
+        IIssueEventPublisher events,
+        IGuestStatusPublisher guestEvents)
     {
         _db = db;
         _fraudScorer = fraudScorer;
         _pointsService = pointsService;
         _aiQueue = aiQueue;
+        _events = events;
+        _guestEvents = guestEvents;
     }
 
     public async Task<SubmitFeedbackResponse> HandleAsync(
@@ -141,6 +148,17 @@ public class FeedbackHandler
                     Text:        pipelineText,
                     Rating:      request.Rating
                 ));
+
+                // Notify subscribed staff dashboards. Publisher swallows hub errors
+                // internally, but ct propagates so a cancelled request stops fast.
+                await _events.IssueCreatedAsync(businessId, issueId.Value, ct);
+                await _events.DashboardStatsChangedAsync(businessId, ct);
+
+                // Notify the guest's status screen so the timeline reflects
+                // "Submitted" the instant the request returns. Status here is
+                // always "open" — IssueHandler transitions it later.
+                await _guestEvents.StatusChangedAsync(
+                    sessionId, issueId.Value, IssueStatus.open.ToString(), ct);
             }
 
             return new SubmitFeedbackResponse(
@@ -155,5 +173,62 @@ public class FeedbackHandler
             await tx.RollbackAsync(ct);
             throw;
         }
+    }
+
+    /// <summary>
+    /// Looks up the issue tied to the current guest session — used by the guest
+    /// status screen. Returns null when the session has no issue (rating ≥ 4,
+    /// no negative feedback → no issue created). Caller must validate the
+    /// session cookie (FeedbackController does this).
+    /// </summary>
+    public async Task<GuestIssueStatus?> GetForSessionAsync(
+        Guid sessionId, CancellationToken ct = default)
+    {
+        // A guest session usually has zero or one issue, but if they submit
+        // multiple low-rating feedbacks in the same QR scan we want the most
+        // recent one (current state of the world).
+        var issue = await _db.Issues
+            .AsNoTracking()
+            .Where(i => i.SessionId == sessionId)
+            .OrderByDescending(i => i.CreatedAt)
+            .FirstOrDefaultAsync(ct);
+
+        if (issue is null) return null;
+
+        string? locationName = null;
+        if (issue.LocationId.HasValue)
+        {
+            locationName = await _db.Locations
+                .AsNoTracking()
+                .Where(l => l.Id == issue.LocationId.Value)
+                .Select(l => l.Name)
+                .FirstOrDefaultAsync(ct);
+        }
+
+        string? departmentName = null;
+        if (issue.DepartmentId.HasValue)
+        {
+            departmentName = await _db.Departments
+                .AsNoTracking()
+                .Where(d => d.Id == issue.DepartmentId.Value)
+                .Select(d => d.Name)
+                .FirstOrDefaultAsync(ct);
+        }
+
+        return new GuestIssueStatus(
+            IssueId:        issue.Id,
+            Title:          issue.Title,
+            Description:    issue.Description,
+            Status:         issue.Status.ToString(),
+            Priority:       issue.Priority.ToString(),
+            LocationName:   locationName,
+            DepartmentName: departmentName,
+            AiCategory:     issue.AiCategory,
+            AiPriorityScore: issue.AiPriorityScore,
+            AiFallback:     issue.AiFallback,
+            CreatedAt:      issue.CreatedAt,
+            UpdatedAt:      issue.UpdatedAt,
+            ResolvedAt:     issue.ResolvedAt
+        );
     }
 }
