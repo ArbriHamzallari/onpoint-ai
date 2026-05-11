@@ -52,7 +52,13 @@ public class SessionController(GuestSessionHandler sessions) : ControllerBase
         });
     }
 
-    // QR short-link entry point — will redirect to PWA in Phase 5
+    // QR short-link entry point.
+    //
+    // Real phone scans open the URL in a browser — those clients send
+    // Accept: text/html and get a 302 redirect to /feedback (the SPA's G1
+    // welcome screen). Programmatic clients (curl, integration tests, fetch
+    // without explicit Accept) get the JSON payload, which keeps existing
+    // E2E scripts working.
     [HttpGet("/r/{shortCode}")]
     public async Task<IActionResult> ResolveQr(string shortCode)
     {
@@ -71,8 +77,47 @@ public class SessionController(GuestSessionHandler sessions) : ControllerBase
             Expires = result.ExpiresAt
         });
 
-        // Phase 5: replace with Redirect($"https://app.onpoint.ai/feedback?s={result.SessionId}")
+        var acceptsHtml = Request.Headers.Accept
+            .Any(h => h is not null && h.Contains("text/html", StringComparison.OrdinalIgnoreCase));
+
+        if (acceptsHtml)
+            return Redirect("/feedback");
+
         return Ok(new { message = "Session created", sessionId = result.SessionId });
+    }
+
+    // GET /api/sessions/me
+    // Guest-scoped: returns the business + location context for the current
+    // op_session cookie. The G1 welcome screen calls this on mount so it can
+    // render "Welcome to Oceanview Hotel, Room 204" without needing the data
+    // baked into the URL.
+    [HttpGet("sessions/me")]
+    public async Task<IActionResult> Me()
+    {
+        if (!Request.Cookies.TryGetValue("op_session", out var raw)
+            || !Guid.TryParse(raw, out var sessionId))
+        {
+            return Unauthorized(new { error = "No valid guest session." });
+        }
+
+        var ctx = await sessions.GetContextAsync(sessionId);
+        if (ctx is null)
+            return NotFound(new { error = "Session expired or location unavailable." });
+
+        return Ok(new
+        {
+            sessionId       = ctx.SessionId,
+            businessId      = ctx.BusinessId,
+            businessName    = ctx.BusinessName,
+            businessLogoUrl = ctx.BusinessLogoUrl,
+            location = new
+            {
+                id    = ctx.LocationId,
+                name  = ctx.LocationName,
+                label = ctx.LocationLabel
+            },
+            expiresAt = ctx.ExpiresAt
+        });
     }
 }
 

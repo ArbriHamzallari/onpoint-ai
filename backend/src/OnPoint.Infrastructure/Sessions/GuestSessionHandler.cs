@@ -57,6 +57,54 @@ public class GuestSessionHandler(AppDbContext db)
             location.Label,
             session.ExpiresAt);
     }
+
+    /// <summary>
+    /// Resolves an existing session (by id from the op_session cookie) into the
+    /// same shape <see cref="CreateFromShortCodeAsync"/> returns. Used by
+    /// GET /api/sessions/me so the guest welcome screen can render the business
+    /// name + location after a QR redirect, without re-creating the session.
+    /// Returns null when the session is missing, expired, or its location was
+    /// soft-deleted.
+    /// </summary>
+    public async Task<SessionResult?> GetContextAsync(Guid sessionId)
+    {
+        var session = await db.FeedbackSessions
+            .AsNoTracking()
+            .Where(s => s.Id == sessionId && s.ExpiresAt > DateTime.UtcNow)
+            .Select(s => new { s.Id, s.BusinessId, s.LocationId, s.ExpiresAt })
+            .FirstOrDefaultAsync();
+
+        if (session is null) return null;
+
+        var business = await db.Businesses
+            .AsNoTracking()
+            .Where(b => b.Id == session.BusinessId)
+            .Select(b => new { b.Id, b.Name, b.LogoUrl })
+            .FirstOrDefaultAsync();
+
+        if (business is null) return null;
+
+        // Location is optional in the schema but always set in practice (a
+        // session is always created from a QR pointing at a location). Defensive
+        // null handling keeps this future-proof.
+        var location = session.LocationId.HasValue
+            ? await db.Locations
+                .AsNoTracking()
+                .Where(l => l.Id == session.LocationId.Value)
+                .Select(l => new { l.Id, l.Name, l.Label })
+                .FirstOrDefaultAsync()
+            : null;
+
+        return new SessionResult(
+            session.Id,
+            business.Id,
+            business.Name,
+            business.LogoUrl,
+            location?.Id ?? Guid.Empty,
+            location?.Name ?? string.Empty,
+            location?.Label,
+            session.ExpiresAt);
+    }
 }
 
 public record SessionResult(

@@ -193,6 +193,21 @@ export interface SessionResponse {
   sessionId: string
 }
 
+// Matches the anonymous payload returned by GET /api/sessions/me.
+// Used by the G1 welcome screen to render "Welcome to {businessName}, {location}".
+export interface SessionContext {
+  sessionId: string
+  businessId: string
+  businessName: string
+  businessLogoUrl: string | null
+  location: {
+    id: string
+    name: string
+    label: string | null
+  }
+  expiresAt: string
+}
+
 // Matches GuestIssueStatus record returned by GET /api/feedback/me/issue.
 // Deliberate subset — no assignedTo/resolvedBy (staff-only), no feedback rating
 // (the guest knows what they submitted).
