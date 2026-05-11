@@ -6,6 +6,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import { RoomsPage } from './pages/RoomsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { GuestFeedbackPage } from './pages/GuestFeedbackPage'
+import { GuestStatusPage } from './pages/GuestStatusPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 
 export default function App() {
@@ -16,6 +17,7 @@ export default function App() {
           {/* Public */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/feedback" element={<GuestFeedbackPage />} />
+          <Route path="/feedback/status" element={<GuestStatusPage />} />
 
           {/* Staff (protected) */}
           <Route

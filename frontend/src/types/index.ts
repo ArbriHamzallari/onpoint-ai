@@ -192,3 +192,22 @@ export interface FeedbackResponse {
 export interface SessionResponse {
   sessionId: string
 }
+
+// Matches GuestIssueStatus record returned by GET /api/feedback/me/issue.
+// Deliberate subset — no assignedTo/resolvedBy (staff-only), no feedback rating
+// (the guest knows what they submitted).
+export interface GuestIssueStatus {
+  issueId: string
+  title: string
+  description: string | null
+  status: IssueStatus
+  priority: IssuePriority
+  locationName: string | null
+  departmentName: string | null
+  aiCategory: string | null
+  aiPriorityScore: number | null
+  aiFallback: boolean
+  createdAt: string
+  updatedAt: string
+  resolvedAt: string | null
+}

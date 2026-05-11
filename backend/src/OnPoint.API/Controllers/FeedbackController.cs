@@ -39,4 +39,23 @@ public class FeedbackController : ControllerBase
             return BadRequest(new { error = ex.Message });
         }
     }
+
+    // GET /api/feedback/me/issue
+    // Guest-scoped: returns the issue tied to the current op_session cookie.
+    // 404 when the session exists but has no issue (e.g. rating ≥ 4 → no issue
+    // created); the guest status page renders a "thanks!" branch in that case.
+    [HttpGet("me/issue")]
+    public async Task<IActionResult> MyIssue(CancellationToken ct)
+    {
+        if (!Request.Cookies.TryGetValue("op_session", out var sessionIdStr)
+            || !Guid.TryParse(sessionIdStr, out var sessionId))
+        {
+            return Unauthorized(new { error = "No valid guest session." });
+        }
+
+        var result = await _handler.GetForSessionAsync(sessionId, ct);
+        return result is null
+            ? NotFound(new { error = "No issue for this session." })
+            : Ok(result);
+    }
 }
