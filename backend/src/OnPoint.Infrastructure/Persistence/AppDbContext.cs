@@ -152,6 +152,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(x => x.SlaBreached).HasColumnName("sla_breached");
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
             e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+            // AI enrichment columns added in migration 0003
+            e.Property(x => x.AiCategory).HasColumnName("ai_category");
+            e.Property(x => x.AiCategoryConfidence).HasColumnName("ai_category_confidence");
+            e.Property(x => x.AiPriorityScore).HasColumnName("ai_priority_score");
+            e.Property(x => x.AiFallback).HasColumnName("ai_fallback");
         });
 
         // StaffUser

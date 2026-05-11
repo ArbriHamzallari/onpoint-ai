@@ -98,7 +98,13 @@ public class IssueHandler
                 ? departments.GetValueOrDefault(i.DepartmentId.Value)
                 : null,
             CreatedAt: i.CreatedAt,
-            ResolvedAt: i.ResolvedAt
+            ResolvedAt: i.ResolvedAt,
+            AiCategory: i.AiCategory,
+            AiCategoryConfidence: i.AiCategoryConfidence.HasValue
+                ? (double?)decimal.ToDouble(i.AiCategoryConfidence.Value)
+                : null,
+            AiPriorityScore: i.AiPriorityScore,
+            AiFallback: i.AiFallback
         )).ToList();
 
         return new IssueListResponse(items, total, page, pageSize);
@@ -162,7 +168,13 @@ public class IssueHandler
             FeedbackComment: feedback?.Comment,
             CreatedAt: issue.CreatedAt,
             UpdatedAt: issue.UpdatedAt,
-            ResolvedAt: issue.ResolvedAt
+            ResolvedAt: issue.ResolvedAt,
+            AiCategory: issue.AiCategory,
+            AiCategoryConfidence: issue.AiCategoryConfidence.HasValue
+                ? (double?)decimal.ToDouble(issue.AiCategoryConfidence.Value)
+                : null,
+            AiPriorityScore: issue.AiPriorityScore,
+            AiFallback: issue.AiFallback
         );
     }
 

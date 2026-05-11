@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using OnPoint.Application.Ai;
 using OnPoint.Domain;
 using OnPoint.Infrastructure.Persistence;
 
@@ -9,15 +10,18 @@ public class FeedbackHandler
     private readonly AppDbContext _db;
     private readonly FraudScorer _fraudScorer;
     private readonly PointsService _pointsService;
+    private readonly IAiPipelineQueue _aiQueue;
 
     public FeedbackHandler(
         AppDbContext db,
         FraudScorer fraudScorer,
-        PointsService pointsService)
+        PointsService pointsService,
+        IAiPipelineQueue aiQueue)
     {
         _db = db;
         _fraudScorer = fraudScorer;
         _pointsService = pointsService;
+        _aiQueue = aiQueue;
     }
 
     public async Task<SubmitFeedbackResponse> HandleAsync(
@@ -119,6 +123,25 @@ public class FeedbackHandler
 
             await _db.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
+
+            // Enqueue AI inference AFTER commit — issue must exist in DB before
+            // the background worker reads it. Fire-and-forget; guest response is
+            // already in-flight. Per CLAUDE.md: never block the guest path.
+            if (issueId.HasValue)
+            {
+                var pipelineText = string.IsNullOrWhiteSpace(request.Comment)
+                    ? $"Guest issue — rating {request.Rating}/5"
+                    : request.Comment.Trim();
+
+                _aiQueue.Enqueue(new AiPipelineRequest(
+                    BusinessId:  businessId,
+                    SessionId:   sessionId,
+                    IssueId:     issueId.Value,
+                    FeedbackId:  feedback.Id,
+                    Text:        pipelineText,
+                    Rating:      request.Rating
+                ));
+            }
 
             return new SubmitFeedbackResponse(
                 FeedbackId: feedback.Id,

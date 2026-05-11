@@ -3,8 +3,10 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using OnPoint.API.Middleware;
+using OnPoint.Application.Ai;
 using OnPoint.Application.Tenancy;
 using OnPoint.Domain;
+using OnPoint.Infrastructure.Ai;
 using OnPoint.Infrastructure.Auth;
 using OnPoint.Infrastructure.Identity;
 using OnPoint.Infrastructure.Persistence;
@@ -86,6 +88,17 @@ builder.Services.AddScoped<FeedbackHandler>();
 builder.Services.AddScoped<IssueHandler>();
 builder.Services.AddScoped<LocationHandler>();
 builder.Services.AddScoped<DepartmentHandler>();
+
+// ── AI Pipeline ───────────────────────────────────────────────────────────────
+builder.Services.Configure<AiClientOptions>(
+    builder.Configuration.GetSection("AiService"));
+builder.Services.AddHttpClient<IAiService, AiClient>();
+// AiPipelineQueue is a singleton — one channel shared across all requests.
+builder.Services.AddSingleton<AiPipelineQueue>();
+builder.Services.AddSingleton<IAiPipelineQueue>(sp =>
+    sp.GetRequiredService<AiPipelineQueue>());
+builder.Services.AddScoped<AiPipelineOrchestrator>();
+builder.Services.AddHostedService<AiPipelineBackgroundService>();
 
 // ── HTTP ──────────────────────────────────────────────────────────────────────
 builder.Services.AddControllers();

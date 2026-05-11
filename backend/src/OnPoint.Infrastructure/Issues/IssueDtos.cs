@@ -19,7 +19,12 @@ public record IssueListItem(
     Guid? DepartmentId,
     string? DepartmentName,
     DateTime CreatedAt,
-    DateTime? ResolvedAt
+    DateTime? ResolvedAt,
+    // AI enrichment — null until the background pipeline completes
+    string? AiCategory,
+    double? AiCategoryConfidence,
+    int? AiPriorityScore,
+    bool AiFallback
 );
 
 public record IssueListResponse(
@@ -47,7 +52,12 @@ public record IssueDetailResponse(
     string? FeedbackComment,
     DateTime CreatedAt,
     DateTime UpdatedAt,
-    DateTime? ResolvedAt
+    DateTime? ResolvedAt,
+    // AI enrichment — null until the background pipeline completes
+    string? AiCategory,
+    double? AiCategoryConfidence,
+    int? AiPriorityScore,
+    bool AiFallback
 );
 
 // ---- Actions ----

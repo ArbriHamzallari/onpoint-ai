@@ -9,6 +9,7 @@ from app.pipeline import (
     chatbot,
     classifier,
     matcher,
+    orchestrator,
     priority,
     recommender,
     router,
@@ -68,3 +69,5 @@ app.include_router(matcher.router, prefix="/api/v1", tags=["pipeline"])
 app.include_router(recommender.router, prefix="/api/v1", tags=["pipeline"])
 app.include_router(satisfaction.router, prefix="/api/v1", tags=["pipeline"])
 app.include_router(chatbot.router, prefix="/api/v1", tags=["pipeline"])
+# Orchestrator: single endpoint that runs all 4 pipeline stages in one call
+app.include_router(orchestrator.pipeline_router, prefix="/api/v1", tags=["pipeline"])
